@@ -4,7 +4,7 @@ import { addContacts } from '../scenarios/add-contacts.js';
 import { updateContacts } from '../scenarios/update-contacts.js';
 import { deleteContacts } from '../scenarios/delete-contacts.js';
 import { BASE_URL, USERS } from "../config/config.js"
-import { login, logout, checkStatus, httpRequest } from '../utils/httpUtil.js';
+import { login, logout, checkStatus, getContactList, getContact, createContact, deleteContact, partiallyUpdateContact } from '../utils/httpUtil.js';
 import { getRandomDataElement } from '../utils/dataUtil.js';
 import { expect, chai } from 'https://jslib.k6.io/k6chaijs/4.3.4.0/index.js';
 import { initContractPlugin } from 'https://jslib.k6.io/k6chaijs-contracts/4.3.4.0/index.js';
@@ -20,7 +20,8 @@ initContractPlugin(chai)
 export function setup(){
     let params = []
     for(const user of USERS){
-        const response = login(`${BASE_URL}/users/login`,user.email, user.password);
+
+        const response = login(user.email, user.password);
         checkStatus(response.status, 200, 'Login successful');
         expect(response.json(), "Login schema validation.").to.matchSchema(login_user_schema);
 
@@ -58,21 +59,15 @@ export function add_contact(data){
 
     // console.log("Iteration " + exec.scenario.iterationInTest +" got index " + index)
 
-    // sleep(1)
-    // const resError = http.get(BASE_URL + "/contacts"); 
-    // checkStatus(resError.status, 401)
-
     const payload = JSON.stringify(getRandomDataElement(contacts))
  
-    const addContactResp = httpRequest('post', "/contacts", payload, params)
-    checkStatus(addContactResp.status, 201, "Contact created successfully.")
-    expect(addContactResp.json(), "Contact response schema.").to.matchSchema(contact_schema)
-
-    // sleep(0.3)
+    const createResp = createContact(payload, params)
+    checkStatus(createResp.status, 201, "Contact created successfully.")
+    expect(createResp.json(), "Contact response schema.").to.matchSchema(contact_schema);
     
-    const contactId = addContactResp.json()['_id']
+    const contactId = createResp.json()['_id'];
 
-    const getContactResp = httpRequest('get', `/contacts/${contactId}`, null, params)
+    const getContactResp = getContact(contactId, params)
     checkStatus(getContactResp.status, 200, "Contact successfully retrieved.");
 
 }
@@ -86,7 +81,7 @@ export function update_contact(data){
     // console.log("Iteration " + exec.scenario.iterationInTest +" got index " + index)
     // sleep(1)
     
-    const getContactsResp = httpRequest('get', `/contacts`, null, params);
+    const getContactsResp = getContactList(params);
     checkStatus(getContactsResp.status, 200, "All contacts retrieved.");
 
     const responseBody = JSON.parse(getContactsResp.body);
@@ -100,8 +95,9 @@ export function update_contact(data){
             "lastName": "New surname"
         });
 
-        const updateContactResp = httpRequest('patch', `/contacts/${contactId}`, payload, params)
+        const updateContactResp = partiallyUpdateContact(contactId, payload, params)
         checkStatus(updateContactResp.status, 200, "Contact successfully updated.")
+        expect(updateContactResp.json(), "Update contact schema.").to.matchSchema(contact_schema)
     }
     else
     {
@@ -114,27 +110,24 @@ export function delete_contact(data){
 
     const index = exec.scenario.iterationInTest % data.length;
     const params = data[index]
-
     // console.log("Iteration " + exec.scenario.iterationInTest +" got index " + index)
     
-    // sleep(1)
-
-    const getContactsResp = httpRequest('get', `/contacts`, null, params);
+    const getContactsResp = getContactList(params);
     checkStatus(getContactsResp.status, 200, "All contacts retrieved.");
-    const responseBody = JSON.parse(getContactsResp.body);
 
+    const responseBody = JSON.parse(getContactsResp.body);
     if (responseBody.length !== 0)
     {
         const contactId = getRandomDataElement(getContactsResp.json())['_id']
         
-        const get = httpRequest('get', `/contacts/${contactId}`, null , params)
-        checkStatus(get.status, 200, "Get contact before deleting")
-        console.log(get.json())
+        const contactResp = getContact(contactId, params)
+        checkStatus(contactResp.status, 200, "Get contact before deleting")
+        // console.log(contactResp.json())
 
-        const response = httpRequest('del', `/contacts/${contactId}`, null, params)
+        const response = deleteContact(contactId, params)
         checkStatus(response.status, 200, "Contact deleted.")
 
-        const getDeleted = httpRequest('get', `/contacts/${contactId}`, null ,params)
+        const getDeleted = getContact(contactId, params)
         checkStatus(getDeleted.status, 404, "Contact was indeed deleted!")
     }
     else
@@ -146,9 +139,8 @@ export function delete_contact(data){
 
 
 export function teardown(data){
-    console.log('\n')
     for(const params of data){
-        const response = logout(`${BASE_URL}/users/logout`, params);
+        const response = logout(params);
         checkStatus(response.status, 200, "Logged out successfully.");
         // console.log("Logged out user with token: " + params.headers['Authorization'].replace('Bearer ', ''))
     }

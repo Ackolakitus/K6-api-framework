@@ -2,23 +2,23 @@ import http from "k6/http";
 import { check } from 'k6';
 import { BASE_URL } from "../config/config.js"
 
-export function login(url, email, password){
-    const response = http.post(url, 
-        JSON.stringify({
-            "email": email, 
-            "password": password
-        }),
-        {
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        });
+export function login(email, password){
+    const payload = JSON.stringify({
+        "email": email, 
+        "password": password
+    });
 
-    return response;
+    const params = {
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    };
+
+    return http.post(`${BASE_URL}/users/login`, payload, params);
 }
 
-export function logout(url, params){
-    return http.post(url, null, params);
+export function logout(params){
+    return http.post(`${BASE_URL}/users/logout`, null, params);
 }
 
 export function checkStatus(actual, expected, text = `status is ${expected}`) {
@@ -35,26 +35,26 @@ export function httpRequest(method, url, payload=null, params=null){
 }
 
 
-export function getContactList(){
-
+export function getContactList(params){
+    return http.get(`${BASE_URL}/contacts`, params);
 }
 
-export function getContact(){
-
+export function getContact(contactId, params){
+    return http.get(`${BASE_URL}/contacts/${contactId}`, params);
 }
 
-export function createContact(){
-
+export function createContact(payload, params){
+    return http.post(`${BASE_URL}/contacts`, payload, params);
 }
 
-export function deleteContact(){
-
+export function deleteContact(contactId, params){
+    return http.del(`${BASE_URL}/contacts/${contactId}`, null, params);
 }
 
-export function partiallyUpdateContact(){
-
+export function partiallyUpdateContact(contactId, payload, params){
+    return http.patch(`${BASE_URL}/contacts/${contactId}`, payload, params);
 }
 
-export function updateContact(){
-    
+export function fullyUpdateContact(contactId, payload, params){
+    return http.patch(`${BASE_URL}/contacts/${contactId}`, payload, params);
 }
