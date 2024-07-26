@@ -1,0 +1,43 @@
+{
+    "contacts": [
+    {
+        "firstName": "A",
+        "lastName": "B",
+        "birthdate": "1970-01-01",
+        "email": "ab@fake.com",
+        "phone": "8005555555",
+        "street1": "1 Main St.",
+        "street2": "Apartment A",
+        "city": "Anytown",
+        "stateProvince": "KS",
+        "postalCode": "12345",
+        "country": "MK"
+    },
+    {
+        "firstName": "C",
+        "lastName": "D",
+        "birthdate": "1970-01-01",
+        "email": "cd@fake.com",
+        "phone": "8005555555",
+        "street1": "2 Main St.",
+        "street2": "Apartment B",
+        "city": "Sometown",
+        "stateProvince": "KS",
+        "postalCode": "23456",
+        "country": "MK"
+    },
+    {
+        "firstName": "E",
+        "lastName": "F",
+        "birthdate": "1970-01-01",
+        "email": "ef@fake.com",
+        "phone": "8005555555",
+        "street1": "3 Main St.",
+        "street2": "Apartment C",
+        "city": "Notown",
+        "stateProvince": "KS",
+        "postalCode": "34567",
+        "country": "MK"
+    }
+    ]
+}
