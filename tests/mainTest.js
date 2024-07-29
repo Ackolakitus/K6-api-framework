@@ -9,11 +9,27 @@ import { login_user_schema } from '../schemas/user-schema.js';
 import exec from 'k6/execution';
 import { expect, chai } from 'https://jslib.k6.io/k6chaijs/4.3.4.0/index.js';
 import { initContractPlugin } from 'https://jslib.k6.io/k6chaijs-contracts/4.3.4.0/index.js';
+import { randomString } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
 
 initContractPlugin(chai)
 
 const contacts = JSON.parse(open('../data/testData.json'))['contacts'];
 
+
+export const options = {
+    scenarios: {
+        add_contacts: addContacts,
+        update_contacts: updateContacts,
+        delete_contacts: deleteContacts,
+    },
+    thresholds: {
+        'http_req_duration': ['avg < 200', 'p(95) < 250'],
+        'http_req_blocked': ['avg < 150'],
+        'http_req_waiting': ['p(95) < 250'],
+        'iteration_duration': ['p(95) < 1000'],
+        checks: ['rate > 0.85'],
+    }
+}
 
 export function setup(){
     let params = []
@@ -35,26 +51,10 @@ export function setup(){
     return params;
 }
 
-export const options = {
-    scenarios: {
-        add_contacts: addContacts,
-        update_contacts: updateContacts,
-        delete_contacts: deleteContacts,
-    },
-    thresholds: {
-        'http_req_duration': ['avg < 200', 'p(95) < 250'],
-        'http_req_blocked': ['avg < 150'],
-        'http_req_waiting': ['p(95) < 250'],
-        'iteration_duration': ['p(95) < 1000'],
-        checks: ['rate > 0.85'],
-    }
-}
-
 export function add_contact(data){
 
     const index = exec.scenario.iterationInTest % data.length;
     const params = data[index]
-
     // console.log("Iteration " + exec.scenario.iterationInTest +" got index " + index)
 
     const payload = JSON.stringify(getRandomDataElement(contacts))
@@ -74,9 +74,7 @@ export function update_contact(data){
 
     const index = exec.scenario.iterationInTest % data.length;
     const params = data[index]
-
     // console.log("Iteration " + exec.scenario.iterationInTest +" got index " + index)
-    // sleep(1)
     
     const getContactsResp = getContactList(params);
     checkStatus(getContactsResp.status, 200, "All contacts retrieved.");
@@ -88,8 +86,8 @@ export function update_contact(data){
         const contactId = getRandomDataElement(getContactsResp.json())['_id']
 
         const payload = JSON.stringify({
-            "firstName": "New name",
-            "lastName": "New surname"
+            "firstName": randomString(7),
+            "lastName": randomString(8)
         });
 
         const updateContactResp = partiallyUpdateContact(contactId, payload, params)
@@ -112,13 +110,17 @@ export function delete_contact(data){
     checkStatus(getContactsResp.status, 200, "All contacts retrieved.");
 
     const responseBody = JSON.parse(getContactsResp.body);
+    // expect(responseBody, 'Contacts list').to.be.an('array')
+
     if (responseBody.length !== 0)
     {
+        responseBody.forEach(element => {
+            expect(element, 'Contact list item schema').to.matchSchema(contact_schema)
+        });
         const contactId = getRandomDataElement(getContactsResp.json())['_id']
         
         const contactResp = getContact(contactId, params)
         checkStatus(contactResp.status, 200, "Get contact before deleting")
-        // console.log(contactResp.json())
 
         const response = deleteContact(contactId, params)
         checkStatus(response.status, 200, "Contact deleted.")
