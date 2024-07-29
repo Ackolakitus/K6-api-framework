@@ -1,21 +1,19 @@
-import { sleep, check } from 'k6';
-import { Trend, Rate, Counter } from 'k6/metrics';
 import { addContacts } from '../scenarios/add-contacts.js';
 import { updateContacts } from '../scenarios/update-contacts.js';
 import { deleteContacts } from '../scenarios/delete-contacts.js';
-import { BASE_URL, USERS } from "../config/config.js"
+import { USERS } from "../config/config.js"
 import { login, logout, checkStatus, getContactList, getContact, createContact, deleteContact, partiallyUpdateContact } from '../utils/httpUtil.js';
 import { getRandomDataElement } from '../utils/dataUtil.js';
+import { contact_schema } from '../schemas/contact-schema.js';
+import { login_user_schema } from '../schemas/user-schema.js';
+import exec from 'k6/execution';
 import { expect, chai } from 'https://jslib.k6.io/k6chaijs/4.3.4.0/index.js';
 import { initContractPlugin } from 'https://jslib.k6.io/k6chaijs-contracts/4.3.4.0/index.js';
-import { contact_schema } from '../schemas/contact-schema.js';
-import { login_user_schema, user_schema } from '../schemas/user-schema.js';
-import exec from 'k6/execution';
 
+initContractPlugin(chai)
 
 const contacts = JSON.parse(open('../data/testData.json'))['contacts'];
 
-initContractPlugin(chai)
 
 export function setup(){
     let params = []
@@ -71,7 +69,6 @@ export function add_contact(data){
     checkStatus(getContactResp.status, 200, "Contact successfully retrieved.");
 
 }
-// ````````````````````````````
 
 export function update_contact(data){
 
@@ -105,7 +102,6 @@ export function update_contact(data){
     }
 }
 
-
 export function delete_contact(data){
 
     const index = exec.scenario.iterationInTest % data.length;
@@ -135,8 +131,6 @@ export function delete_contact(data){
         console.error("Contact list is empty")
     }
 }
-
-
 
 export function teardown(data){
     for(const params of data){
