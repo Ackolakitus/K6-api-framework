@@ -1,6 +1,7 @@
-import faker from 'https://cdnjs.cloudflare.com/ajax/libs/Faker/3.1.0/faker.min.js'
+const faker = require('../data/faker.min')
+const fs = require('fs');
 
-export function generateContact() {
+function generateContact() {
     return {
         firstName: faker.name.firstName(),
         lastName: faker.name.lastName(),
@@ -16,7 +17,7 @@ export function generateContact() {
     };
 }
 
-export function generateContacts(numContacts) {
+function generateContacts(numContacts) {
     const contacts = [];
     for (let i = 0; i < numContacts; i++) {
         contacts.push(generateContact());
@@ -24,6 +25,18 @@ export function generateContacts(numContacts) {
     return contacts;
 }
 
-export function getRandomDataElement(array) {
-  return array[Math.floor(Math.random() * array.length)];
+function generateTestData(filePath, numContacts = 15){
+    const data = { 
+        contacts: generateContacts(numContacts) 
+    };
+
+    fs.writeFile(filePath, JSON.stringify(data, null, 4), (err) => {
+        if (err) {
+            console.error("Error writing testData file:", err);
+        } else {
+            console.log("JSON file has been saved.");
+        }
+    });
 }
+
+generateTestData("../data/testData.json", 20)
